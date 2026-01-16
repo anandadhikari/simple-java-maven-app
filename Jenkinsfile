@@ -37,9 +37,9 @@ pipeline {
         stage('Code Quality') {
             steps {
                 echo 'Checking Code Quality on SonarCloud...'
-                // The magic command. It sends code to the cloud for analysis.
+                // FIX: Use the full plugin name (GroupId:ArtifactId:Goal)
                 sh '''
-                  mvn sonar:sonar \
+                  mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
                   -Dsonar.projectKey=${SONAR_PROJECT} \
                   -Dsonar.organization=${SONAR_ORG} \
                   -Dsonar.host.url=https://sonarcloud.io \
