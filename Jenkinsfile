@@ -7,11 +7,9 @@ pipeline {
     
     // Define environment variables for SonarCloud
     environment {
-        // REPLACE THESE WITH YOUR ACTUAL VALUES FROM STEP 9.1
         SONAR_ORG = 'anandadhikari' 
-        SONAR_PROJECT = 'simple-java-maven-app'
-        
-        // This automatically pulls the secret 'sonar-token' we saved in Step 9.2
+        // FIX: Add the prefix to the project key
+        SONAR_PROJECT = 'anandadhikari_simple-java-maven-app'
         SONAR_TOKEN = credentials('sonar-token')
     }
 
