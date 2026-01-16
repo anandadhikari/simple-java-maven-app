@@ -1,28 +1,53 @@
 pipeline {
     agent any
-    options {
-        skipStagesAfterUnstable()
+
+    // This tells Jenkins: "I need Maven. Look for the tool named 'M3' and install it."
+    tools {
+        maven 'M3' 
     }
+
     stages {
+        stage('Checkout') {
+            steps {
+                // Jenkins does this automatically for "Pipeline from SCM", 
+                // but explicit checkout is good documentation.
+                checkout scm
+            }
+        }
+        
         stage('Build') {
             steps {
-                sh 'mvn -B -DskipTests clean package'
+                echo 'Compiling...'
+                // sh executes a shell script. 
+                // 'mvn' is now available because of the tools section.
+                sh 'mvn clean compile' 
             }
         }
+
         stage('Test') {
             steps {
+                echo 'Running JUnit Tests...'
                 sh 'mvn test'
             }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
-                }
+        }
+
+        stage('Package') {
+            steps {
+                echo 'Packaging JAR file...'
+                sh 'mvn package -DskipTests' 
+                // We skip tests here because we just ran them in the previous stage.
             }
         }
-        stage('Deliver') { 
-            steps {
-                sh './jenkins/scripts/deliver.sh' 
-            }
+    }
+    
+    post {
+        // This runs after all stages, regardless of success/failure
+        always {
+            // Archive the JAR file so you can download it from the Jenkins UI
+            archiveArtifacts artifacts: 'target/**/*.jar', fingerprint: true
+            
+            // Capture JUnit test results for the dashboard graph
+            junit 'target/surefire-reports/*.xml'
         }
     }
 }
