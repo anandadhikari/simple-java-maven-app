@@ -3,8 +3,7 @@ pipeline {
     
     tools {
         maven 'M3'
-        // FIX: Tell Jenkins to install/use the 'docker' tool we just configured
-        dockerTool 'docker' 
+        // REMOVED: dockerTool 'docker' (We will handle this manually)
     }
     
     environment {
@@ -18,6 +17,22 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+        
+        stage('Setup Docker Client') {
+            steps {
+                echo 'Setting up Docker Client locally...'
+                script {
+                    // 1. Download the static binary (v24.0.7)
+                    sh 'curl -LO https://download.docker.com/linux/static/stable/x86_64/docker-24.0.7.tgz'
+                    
+                    // 2. Extract it
+                    sh 'tar xzvf docker-24.0.7.tgz'
+                    
+                    // 3. Verify it works
+                    sh './docker/docker --version'
+                }
             }
         }
         
@@ -44,11 +59,8 @@ pipeline {
             steps {
                 echo 'Building Docker Image...'
                 script {
-                    // DEBUG: List all files in the tools directory to see where 'docker' is hiding
-                    sh "find /var/jenkins_home/tools/org.jenkinsci.plugins.docker.commons.tools.DockerTool -name docker"
-                    
-                    // The build command (might still fail, but we need the logs above)
-                    sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
+                    // USE THE LOCAL BINARY: ./docker/docker
+                    sh "./docker/docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
                 }
             }
         }
@@ -56,7 +68,10 @@ pipeline {
     
     post {
         always {
-            sh "docker rmi ${IMAGE_NAME}:${BUILD_NUMBER} || true"
+            // Cleanup using the local binary
+            sh "./docker/docker rmi ${IMAGE_NAME}:${BUILD_NUMBER} || true"
+            // Clean up the downloaded docker folder
+            sh "rm -rf docker docker-24.0.7.tgz"
         }
     }
 }
