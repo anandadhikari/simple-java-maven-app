@@ -5,12 +5,14 @@ pipeline {
         maven 'M3' 
     }
     
-    // Define environment variables for SonarCloud
     environment {
+        // Keep your SonarCloud credentials here
         SONAR_ORG = 'anandadhikari' 
-        // FIX: Add the prefix to the project key
         SONAR_PROJECT = 'anandadhikari_simple-java-maven-app'
         SONAR_TOKEN = credentials('sonar-token')
+        
+        // Define our image name
+        IMAGE_NAME = 'my-java-app'
     }
 
     stages {
@@ -20,22 +22,15 @@ pipeline {
             }
         }
         
-        stage('Build') {
+        stage('Build & Test') {
             steps {
-                sh 'mvn clean compile' 
-            }
-        }
-
-        stage('Test') {
-            steps {
-                sh 'mvn test'
+                sh 'mvn clean package' 
             }
         }
 
         stage('Code Quality') {
             steps {
-                echo 'Checking Code Quality on SonarCloud...'
-                // FIX: Use the full plugin name (GroupId:ArtifactId:Goal)
+                echo 'Checking Code Quality...'
                 sh '''
                   mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
                   -Dsonar.projectKey=${SONAR_PROJECT} \
@@ -46,10 +41,22 @@ pipeline {
             }
         }
 
-        stage('Package') {
+        stage('Build Docker Image') {
             steps {
-                sh 'mvn package -DskipTests' 
+                echo 'Building Docker Image...'
+                // This command runs INSIDE the Jenkins container, 
+                // but talks to your Windows Docker Desktop via the socket mount.
+                script {
+                    sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
+                }
             }
+        }
+    }
+    
+    post {
+        always {
+            // Clean up: Delete the image to save space on your laptop
+            sh "docker rmi ${IMAGE_NAME}:${BUILD_NUMBER} || true"
         }
     }
 }
