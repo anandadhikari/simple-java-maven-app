@@ -44,7 +44,10 @@ pipeline {
             steps {
                 echo 'Building Docker Image...'
                 script {
-                    // Jenkins now knows where the 'docker' command is!
+                    // DEBUG: List all files in the tools directory to see where 'docker' is hiding
+                    sh "find /var/jenkins_home/tools/org.jenkinsci.plugins.docker.commons.tools.DockerTool -name docker"
+                    
+                    // The build command (might still fail, but we need the logs above)
                     sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
                 }
             }
