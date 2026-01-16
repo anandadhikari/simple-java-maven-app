@@ -2,16 +2,15 @@ pipeline {
     agent any
     
     tools {
-        maven 'M3' 
+        maven 'M3'
+        // FIX: Tell Jenkins to install/use the 'docker' tool we just configured
+        dockerTool 'docker' 
     }
     
     environment {
-        // Keep your SonarCloud credentials here
         SONAR_ORG = 'anandadhikari' 
         SONAR_PROJECT = 'anandadhikari_simple-java-maven-app'
         SONAR_TOKEN = credentials('sonar-token')
-        
-        // Define our image name
         IMAGE_NAME = 'my-java-app'
     }
 
@@ -44,9 +43,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker Image...'
-                // This command runs INSIDE the Jenkins container, 
-                // but talks to your Windows Docker Desktop via the socket mount.
                 script {
+                    // Jenkins now knows where the 'docker' command is!
                     sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
                 }
             }
@@ -55,7 +53,6 @@ pipeline {
     
     post {
         always {
-            // Clean up: Delete the image to save space on your laptop
             sh "docker rmi ${IMAGE_NAME}:${BUILD_NUMBER} || true"
         }
     }
